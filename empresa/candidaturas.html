@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Candidaturas - VagasLocal</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container header-content">
+      <a href="../index.html" class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        VagasLocal
+      </a>
+      <nav class="nav">
+        <span id="user-name" style="display: none;"></span>
+        <button onclick="logout()" class="btn btn-outline btn-sm">Sair</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="dashboard">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Menu</span>
+        <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <ul class="sidebar-menu" id="sidebar-menu">
+        <li><a href="dashboard.html">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a></li>
+        <li><a href="nova-vaga.html">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Nova Vaga
+        </a></li>
+        <li><a href="candidaturas.html" class="active">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Candidaturas
+        </a></li>
+      </ul>
+    </aside>
+
+    <main class="dashboard-content">
+      <h1 style="margin-bottom: 1.25rem; font-size: 1.5rem;">Candidaturas Recebidas</h1>
+      
+      <div class="stats-grid" style="margin-bottom: 1.5rem;">
+        <div class="stat-card">
+          <h3>Total</h3>
+          <p class="numero" id="stat-total">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Pendentes</h3>
+          <p class="numero" id="stat-pendentes">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Análise</h3>
+          <p class="numero" id="stat-analise">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Aprovadas</h3>
+          <p class="numero" id="stat-aprovadas">0</p>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Candidato</th>
+              <th>Vaga</th>
+              <th>Email</th>
+              <th>Telefone</th>
+              <th>Data</th>
+              <th>Status</th>
+              <th style="min-width: 200px;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-candidaturas"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal de detalhes -->
+  <div id="modal-detalhes" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: white; border-radius: 1rem; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.25rem;">Detalhes da Candidatura</h3>
+        <button onclick="fecharModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">×</button>
+      </div>
+      <div id="modal-conteudo"></div>
+    </div>
+  </div>
+
+  <script src="../js/storage.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar-menu').classList.toggle('open');
+    }
+
+    // Proteger rota
+    const user = Auth.getCurrentUser();
+    if (!user || user.tipo !== 'empresa') {
+      window.location.href = '../login.html';
+    } else {
+      const nameEl = document.getElementById('user-name');
+      nameEl.textContent = user.nome;
+      nameEl.style.display = 'inline';
+    }
+
+    // ========== CARREGAR CANDIDATURAS ==========
+    function carregarCandidaturas() {
+      const candidaturas = Storage.getCandidaturasByEmpresa(user.uid);
+      const tbody = document.getElementById('tabela-candidaturas');
+      
+      // Estatísticas
+      document.getElementById('stat-total').textContent = candidaturas.length;
+      document.getElementById('stat-pendentes').textContent = candidaturas.filter(c => c.status === 'pendente').length;
+      document.getElementById('stat-analise').textContent = candidaturas.filter(c => c.status === 'analise').length;
+      document.getElementById('stat-aprovadas').textContent = candidaturas.filter(c => c.status === 'aprovada').length;
+      
+      if (candidaturas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--gray);">Nenhuma candidatura recebida ainda</td></tr>';
+        return;
+      }
+      
+      // Ordenar por data (mais recente primeiro)
+      candidaturas.sort((a, b) => new Date(b.data) - new Date(a.data));
+      
+      tbody.innerHTML = candidaturas.map(cand => {
+        const data = new Date(cand.data).toLocaleDateString('pt-BR');
+        return `
+          <tr>
+            <td><strong>${cand.candidatoNome || cand.nome}</strong></td>
+            <td>${cand.vagaTitulo}</td>
+            <td>${cand.candidatoEmail || cand.email}</td>
+            <td>${cand.candidatoTelefone || cand.telefone || '-'}</td>
+            <td>${data}</td>
+            <td><span class="status status-${cand.status}">${formatarStatus(cand.status)}</span></td>
+            <td>
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button onclick="verDetalhes('${cand.id}')" class="btn btn-sm btn-primary">Ver</button>
+                <button onclick="atualizarStatus('${cand.id}', 'analise')" class="btn btn-sm btn-outline">Análise</button>
+                <button onclick="atualizarStatus('${cand.id}', 'aprovada')" class="btn btn-sm btn-success">Aprovar</button>
+                <button onclick="atualizarStatus('${cand.id}', 'rejeitada')" class="btn btn-sm btn-danger">Rejeitar</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function formatarStatus(status) {
+      const map = {
+        'pendente': '⏳ Pendente',
+        'analise': '🔍 Análise',
+        'aprovada': '✅ Aprovada',
+        'rejeitada': '❌ Rejeitada'
+      };
+      return map[status] || status;
+    }
+
+    // ========== VER DETALHES ==========
+    function verDetalhes(candId) {
+      const candidaturas = Storage.getAllCandidaturas();
+      const cand = candidaturas.find(c => c.id === candId);
+      if (!cand) return;
+      
+      const data = new Date(cand.data).toLocaleDateString('pt-BR');
+      
+      document.getElementById('modal-conteudo').innerHTML = `
+        <div style="margin-bottom: 1rem;">
+          <strong style="color: var(--gray); font-size: 0.875rem;">Vaga:</strong>
+          <p style="margin-top: 0.25rem;">${cand.vagaTitulo}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <strong style="color: var(--gray); font-size: 0.875rem;">Candidato:</strong>
+          <p style="margin-top: 0.25rem;">${cand.candidatoNome || cand.nome}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <strong style="color: var(--gray); font-size: 0.875rem;">Email:</strong>
+          <p style="margin-top: 0.25rem;">${cand.candidatoEmail || cand.email}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <strong style="color: var(--gray); font-size: 0.875rem;">Telefone:</strong>
+          <p style="margin-top: 0.25rem;">${cand.candidatoTelefone || cand.telefone || 'Não informado'}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <strong style="color: var(--gray); font-size: 0.875rem;">Data da candidatura:</strong>
+          <p style="margin-top: 0.25rem;">${data}</p>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <strong style="color: var(--gray); font-size: 0.875rem;">Status:</strong>
+          <p style="margin-top: 0.25rem;"><span class="status status-${cand.status}">${formatarStatus(cand.status)}</span></p>
+        </div>
+        ${cand.mensagem ? `
+        <div style="margin-bottom: 1rem;">
+          <strong style="color: var(--gray); font-size: 0.875rem;">Mensagem do candidato:</strong>
+          <p style="margin-top: 0.25rem; padding: 0.75rem; background: var(--light-gray); border-radius: 0.5rem;">${cand.mensagem}</p>
+        </div>
+        ` : ''}
+        <div style="margin-bottom: 1rem;">
+          <strong style="color: var(--gray); font-size: 0.875rem;">Currículo:</strong>
+          <p style="margin-top: 0.25rem;">
+            <span style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: #fee2e2; color: #991b1b; border-radius: 0.5rem; font-size: 0.875rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+              ${cand.curriculoNome || 'curriculo.pdf'} (simulado)
+            </span>
+          </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e5e7eb;">
+          <button onclick="atualizarStatus('${cand.id}', 'analise'); fecharModal();" class="btn btn-outline">Mover para Análise</button>
+          <button onclick="atualizarStatus('${cand.id}', 'aprovada'); fecharModal();" class="btn btn-success">Aprovar Candidato</button>
+          <button onclick="atualizarStatus('${cand.id}', 'rejeitada'); fecharModal();" class="btn btn-danger">Rejeitar</button>
+        </div>
+      `;
+      
+      document.getElementById('modal-detalhes').style.display = 'flex';
+    }
+
+    function fecharModal() {
+      document.getElementById('modal-detalhes').style.display = 'none';
+    }
+
+    // Fechar modal ao clicar fora
+    document.getElementById('modal-detalhes').addEventListener('click', function(e) {
+      if (e.target === this) fecharModal();
+    });
+
+    // ========== ATUALIZAR STATUS ==========
+    function atualizarStatus(candId, novoStatus) {
+      const candidaturas = Storage.getAllCandidaturas();
+      const idx = candidaturas.findIndex(c => c.id === candId);
+      
+      if (idx >= 0) {
+        candidaturas[idx].status = novoStatus;
+        localStorage.setItem('vl_candidaturas', JSON.stringify(candidaturas));
+        
+        const msg = {
+          'analise': 'Candidatura movida para análise!',
+          'aprovada': 'Candidato aprovado! Entre em contato.',
+          'rejeitada': 'Candidatura rejeitada.'
+        };
+        
+        alert(msg[novoStatus]);
+        carregarCandidaturas();
+      }
+    }
+
+    // ========== INICIALIZAR ==========
+    carregarCandidaturas();
+  </script>
+</body>
+</html>
