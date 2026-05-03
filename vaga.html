@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Vaga - VagasLocal</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container header-content">
+      <a href="index.html" class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        VagasLocal
+      </a>
+      
+      <button class="menu-toggle" onclick="toggleMenu()" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      
+      <nav class="nav" id="nav"></nav>
+    </div>
+  </header>
+
+  <div class="container" style="padding-top: 1.5rem;">
+    <div id="vaga-conteudo">
+      <!-- Carregado via JS -->
+    </div>
+
+    <div class="form-container" id="area-candidatura" style="margin-top: 1.5rem;">
+      <h3 style="margin-bottom: 1rem;">Enviar Candidatura</h3>
+      <form id="form-candidatura" onsubmit="enviarCandidatura(event)">
+        <div class="form-group">
+          <label>Nome completo *</label>
+          <input type="text" id="cand-nome" required placeholder="Seu nome completo">
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="cand-email" required placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+          <label>Telefone</label>
+          <input type="tel" id="cand-telefone" placeholder="(11) 99999-9999">
+        </div>
+        <div class="form-group">
+          <label>Mensagem para a empresa (opcional)</label>
+          <textarea id="cand-mensagem" placeholder="Por que você é ideal para esta vaga?"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Currículo (PDF) *</label>
+          <input type="file" id="cand-curriculo" accept=".pdf" required>
+          <small style="color: var(--gray); display: block; margin-top: 0.25rem;">Simulação: o arquivo será salvo no LocalStorage</small>
+        </div>
+        <button type="submit" class="btn btn-success w-full">Enviar Candidatura</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/auth.js"></script>
+  <script>
+    function toggleMenu() {
+      const nav = document.getElementById('nav');
+      if (nav.style.display === 'flex') {
+        nav.style.display = '';
+        nav.style = '';
+      } else {
+        nav.style.display = 'flex';
+        nav.style.flexDirection = 'column';
+        nav.style.position = 'absolute';
+        nav.style.top = '100%';
+        nav.style.left = '0';
+        nav.style.right = '0';
+        nav.style.background = 'white';
+        nav.style.padding = '1rem';
+        nav.style.boxShadow = 'var(--shadow-lg)';
+        nav.style.gap = '0.75rem';
+        nav.style.zIndex = '99';
+  }
+  }    
+    
+
+    // Carregar vaga da URL
+    const params = new URLSearchParams(window.location.search);
+    const vagaId = params.get('id');
+    
+    if (vagaId) {
+      const vaga = Storage.getVagaById(vagaId);
+      if (vaga) {
+        document.getElementById('vaga-conteudo').innerHTML = `
+          <div class="vaga-detalhe">
+            <div class="vaga-header">
+              <div style="min-width: 0;">
+                <h1>${vaga.titulo}</h1>
+                <p class="vaga-empresa">${vaga.empresaNome}</p>
+              </div>
+              <span class="vaga-badge badge-${vaga.tipoContrato.toLowerCase()}">${vaga.tipoContrato}</span>
+            </div>
+            
+            <div class="vaga-info" style="margin: 1rem 0; padding: 1rem 0; border-top: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb;">
+              <span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+                ${vaga.cidade}, ${vaga.estado}
+              </span>
+              <span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+                ${vaga.modalidade}
+              </span>
+              ${vaga.salario ? `
+              <span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                ${vaga.salario}
+              </span>` : ''}
+            </div>
+
+            <h3 style="margin-bottom: 0.5rem; font-size: 1.125rem;">Descrição</h3>
+            <p style="color: var(--gray); line-height: 1.8;">${vaga.descricao}</p>
+
+            <h3 style="margin: 1.25rem 0 0.5rem; font-size: 1.125rem;">Requisitos</h3>
+            <ul class="requisitos-lista">
+              ${vaga.requisitos.map(r => `<li>${r}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      } else {
+        document.getElementById('vaga-conteudo').innerHTML = `
+          <div class="alert alert-error">
+            <h3>Vaga não encontrada</h3>
+            <a href="index.html" class="btn btn-primary mt-4">Voltar para vagas</a>
+          </div>
+        `;
+      }
+    }
+
+    function enviarCandidatura(e) {
+      e.preventDefault();
+      
+      const candidatura = {
+        id: Date.now().toString(),
+        vagaId: vagaId,
+        vagaTitulo: document.querySelector('.vaga-detalhe h1')?.textContent || 'Vaga',
+        nome: document.getElementById('cand-nome').value,
+        email: document.getElementById('cand-email').value,
+        telefone: document.getElementById('cand-telefone').value,
+        mensagem: document.getElementById('cand-mensagem').value,
+        curriculoNome: document.getElementById('cand-curriculo').files[0]?.name || 'curriculo.pdf',
+        status: 'pendente',
+        data: new Date().toISOString()
+      };
+
+      Storage.addCandidatura(candidatura);
+      
+      // Incrementar contador
+      const vaga = Storage.getVagaById(vagaId);
+      if (vaga) {
+        vaga.candidaturas = (vaga.candidaturas || 0) + 1;
+        Storage.updateVaga(vaga);
+      }
+
+      document.getElementById('area-candidatura').innerHTML = `
+        <div class="alert alert-success text-center">
+          <h3 style="margin-bottom: 0.5rem;">✓ Candidatura enviada!</h3>
+          <p>A empresa entrará em contato em breve.</p>
+          <a href="index.html" class="btn btn-primary mt-4">Voltar para vagas</a>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
