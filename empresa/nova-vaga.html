@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Nova Vaga - VagasLocal</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container header-content">
+      <a href="../index.html" class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        VagasLocal
+      </a>
+      <nav class="nav">
+        <span id="user-name" style="display: none;"></span>
+        <button onclick="logout()" class="btn btn-outline btn-sm">Sair</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="dashboard">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Menu</span>
+        <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <ul class="sidebar-menu" id="sidebar-menu">
+        <li><a href="dashboard.html">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a></li>
+        <li><a href="nova-vaga.html" class="active">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Nova Vaga
+        </a></li>
+        <li><a href="candidaturas.html">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Candidaturas
+        </a></li>
+      </ul>
+    </aside>
+
+    <main class="dashboard-content">
+      <div style="max-width: 700px;">
+        <h1 style="margin-bottom: 1.25rem; font-size: 1.5rem;">Publicar Nova Vaga</h1>
+        
+        <form onsubmit="salvarVaga(event)" style="background: var(--white); padding: 1.5rem; border-radius: 0.75rem; box-shadow: var(--shadow);">
+          <div class="form-group">
+            <label>Título da Vaga *</label>
+            <input type="text" id="titulo" required placeholder="Ex: Desenvolvedor Front-end">
+          </div>
+
+          <div class="form-group">
+            <label>Descrição da Vaga *</label>
+            <textarea id="descricao" rows="4" required placeholder="Descreva as atividades e responsabilidades..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Requisitos (um por linha) *</label>
+            <textarea id="requisitos" rows="4" required placeholder="Experiência com React&#10;Inglês intermediário&#10;Git/GitHub"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tipo de Contrato *</label>
+              <select id="tipoContrato" required>
+                <option value="CLT">CLT</option>
+                <option value="PJ">PJ</option>
+                <option value="Estágio">Estágio</option>
+                <option value="Freelancer">Freelancer</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Modalidade *</label>
+              <select id="modalidade" required>
+                <option value="Presencial">Presencial</option>
+                <option value="Remoto">Remoto</option>
+                <option value="Híbrido">Híbrido</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Cidade *</label>
+              <input type="text" id="cidade" required placeholder="São Paulo">
+            </div>
+            <div class="form-group">
+              <label>Estado (sigla) *</label>
+              <input type="text" id="estado" required maxlength="2" placeholder="SP" style="text-transform: uppercase;">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Salário (opcional)</label>
+            <input type="text" id="salario" placeholder="Ex: R$ 3.000 - 5.000">
+          </div>
+
+          <div class="form-group">
+            <label>Data de Expiração *</label>
+            <input type="date" id="expiraEm" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-full">Publicar Vaga</button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/storage.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar-menu').classList.toggle('open');
+    }
+
+    const user = Auth.getCurrentUser();
+    if (!user || user.tipo !== 'empresa') {
+      window.location.href = '../login.html';
+    } else {
+      const nameEl = document.getElementById('user-name');
+      nameEl.textContent = user.nome;
+      nameEl.style.display = 'inline';
+    }
+
+    // Data padrão: 30 dias
+    const daqui30Dias = new Date();
+    daqui30Dias.setDate(daqui30Dias.getDate() + 30);
+    document.getElementById('expiraEm').value = daqui30Dias.toISOString().split('T')[0];
+
+    function salvarVaga(e) {
+      e.preventDefault();
+      
+      const vaga = {
+        id: 'vaga_' + Date.now(),
+        titulo: document.getElementById('titulo').value,
+        descricao: document.getElementById('descricao').value,
+        requisitos: document.getElementById('requisitos').value.split('\n').filter(r => r.trim()),
+        tipoContrato: document.getElementById('tipoContrato').value,
+        modalidade: document.getElementById('modalidade').value,
+        cidade: document.getElementById('cidade').value,
+        estado: document.getElementById('estado').value.toUpperCase(),
+        salario: document.getElementById('salario').value,
+        empresaId: user.uid,
+        empresaNome: user.nomeEmpresa || user.nome,
+        status: 'ativa',
+        candidaturas: 0,
+        criadaEm: new Date().toISOString(),
+        expiraEm: document.getElementById('expiraEm').value
+      };
+
+      Storage.addVaga(vaga);
+      alert('✅ Vaga publicada com sucesso!');
+      window.location.href = 'dashboard.html';
+    }
+  </script>
+</body>
+</html>
