@@ -28,28 +28,24 @@ Criar um ecossistema de empregos regional onde:
 
 ## 📁 Estrutura do Projeto
 vagas-local/
-│
-├── 📄 index.html                 # Página inicial - lista de vagas com filtros
-├── 📄 vaga.html                  # Detalhe da vaga + formulário de candidatura
-├── 📄 login.html                 # Login e cadastro (candidato/empresa/admin)
-├── 📄 README.md                  # Documentação do projeto
-│
-├── 📁 css/
-│   └── 📄 style.css              # Estilos responsivos (mobile-first)
-│
-├── 📁 js/
-│   ├── 📄 storage.js             # CRUD LocalStorage (usuários, vagas, candidaturas)
-│   ├── 📄 auth.js                # Autenticação e sessão (sessionStorage)
-│   ├── 📄 vagas.js               # Inicialização do sistema (cria admin padrão)
-│   └── 📄 app.js                 # Lógica da página inicial (filtros, cards)
-│
-├── 📁 empresa/                   # Área restrita para empresas
-│   ├── 📄 dashboard.html         # Painel da empresa (estatísticas + minhas vagas)
-│   ├── 📄 nova-vaga.html         # Formulário para publicar nova vaga
-│   └── 📄 candidaturas.html      # Gerenciamento de candidatos recebidos
-│
-└── 📁 admin/                     # Área restrita para administrador
-    └── 📄 index.html             # Painel admin (aprovar/excluir empresas, estatísticas)
+├── index.html
+├── vaga.html
+├── login.html
+├── README.md
+├── css/
+│   └── style.css
+├── js/
+│   ├── storage.js
+│   ├── auth.js
+│   ├── vagas.js
+│   └── app.js
+├── empresa/
+│   ├── dashboard.html
+│   ├── nova-vaga.html
+│   └── candidaturas.html
+└── admin/
+    └── index.html
+
 
 
 
