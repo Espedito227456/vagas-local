@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Admin - VagasLocal</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container header-content">
+      <a href="../index.html" class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        VagasLocal
+      </a>
+      <nav class="nav">
+        <span style="color: var(--warning); font-weight: 600; font-size: 0.875rem;">🔒 Admin</span>
+        <button onclick="logout()" class="btn btn-outline btn-sm">Sair</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="container" style="padding-top: 1.5rem;">
+    <h1 style="margin-bottom: 1.25rem; font-size: 1.5rem;">Painel Administrativo</h1>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Total de Usuários</h3>
+        <p class="numero" id="stat-usuarios">0</p>
+      </div>
+      <div class="stat-card">
+        <h3>Empresas Pendentes</h3>
+        <p class="numero" id="stat-pendentes">0</p>
+      </div>
+      <div class="stat-card">
+        <h3>Vagas Ativas</h3>
+        <p class="numero" id="stat-vagas">0</p>
+      </div>
+      <div class="stat-card">
+        <h3>Candidaturas</h3>
+        <p class="numero" id="stat-candidaturas">0</p>
+      </div>
+    </div>
+
+    <h2 style="margin: 1.5rem 0 1rem; font-size: 1.125rem;">Empresas Pendentes</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Empresa</th>
+            <th>Responsável</th>
+            <th>Email</th>
+            <th>CNPJ</th>
+            <th>Cidade</th>
+            <th style="min-width: 140px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-pendentes"></tbody>
+      </table>
+    </div>
+
+    <h2 style="margin: 1.5rem 0 1rem; font-size: 1.125rem;">Todas as Empresas</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Empresa</th>
+            <th>Responsável</th>
+            <th>Status</th>
+            <th style="min-width: 140px;">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-empresas"></tbody>
+      </table>
+    </div>
+
+    <h2 style="margin: 1.5rem 0 1rem; font-size: 1.125rem;">Todas as Vagas</h2>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Vaga</th>
+            <th>Empresa</th>
+            <th>Cidade</th>
+            <th>Candidaturas</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-vagas"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="../js/storage.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    // ========== PROTEGER ROTA ADMIN ==========
+    const user = Auth.getCurrentUser();
+    if (!user || user.tipo !== 'admin') {
+      alert('Acesso negado! Faça login como administrador.');
+      window.location.href = '../login.html';
+    }
+
+    // ========== CARREGAR ESTATÍSTICAS ==========
+    function carregarEstatisticas() {
+      const usuarios = Storage.getAllUsers();
+      const vagas = Storage.getAllVagas();
+      const candidaturas = Storage.getAllCandidaturas();
+      
+      const pendentes = usuarios.filter(u => u.tipo === 'empresa' && !u.aprovada);
+      
+      document.getElementById('stat-usuarios').textContent = usuarios.length;
+      document.getElementById('stat-pendentes').textContent = pendentes.length;
+      document.getElementById('stat-vagas').textContent = vagas.filter(v => v.status === 'ativa').length;
+      document.getElementById('stat-candidaturas').textContent = candidaturas.length;
+      
+      return { usuarios, vagas, candidaturas, pendentes };
+    }
+
+    // ========== CARREGAR EMPRESAS PENDENTES ==========
+    function carregarPendentes(usuarios) {
+      const pendentes = usuarios.filter(u => u.tipo === 'empresa' && !u.aprovada);
+      const tbody = document.getElementById('tabela-pendentes');
+      
+      if (pendentes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--gray);">✅ Nenhuma empresa pendente</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = pendentes.map(emp => `
+        <tr>
+          <td><strong>${emp.nomeEmpresa || 'N/A'}</strong></td>
+          <td>${emp.nome}</td>
+          <td>${emp.email}</td>
+          <td>${emp.cnpj || 'N/A'}</td>
+          <td>${emp.cidade}, ${emp.estado}</td>
+          <td>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button onclick="aprovarEmpresa('${emp.uid}')" class="btn btn-sm btn-success">✓ Aprovar</button>
+              <button onclick="deletarEmpresa('${emp.uid}')" class="btn btn-sm btn-danger">🗑 Excluir</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ========== CARREGAR TODAS AS EMPRESAS ==========
+    function carregarEmpresas(usuarios) {
+      const empresas = usuarios.filter(u => u.tipo === 'empresa');
+      const tbody = document.getElementById('tabela-empresas');
+      
+      if (empresas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--gray);">Nenhuma empresa cadastrada</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = empresas.map(emp => `
+        <tr>
+          <td><strong>${emp.nomeEmpresa || 'N/A'}</strong></td>
+          <td>${emp.nome}</td>
+          <td>
+            <span class="status status-${emp.aprovada ? 'aprovada' : 'pendente'}">
+              ${emp.aprovada ? '✅ Aprovada' : '⏳ Pendente'}
+            </span>
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              ${!emp.aprovada ? `<button onclick="aprovarEmpresa('${emp.uid}')" class="btn btn-sm btn-success">Aprovar</button>` : ''}
+              <button onclick="deletarEmpresa('${emp.uid}')" class="btn btn-sm btn-danger">🗑 Excluir</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ========== CARREGAR TODAS AS VAGAS ==========
+    function carregarVagas(vagas) {
+      const tbody = document.getElementById('tabela-vagas');
+      
+      if (vagas.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--gray);">Nenhuma vaga cadastrada</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = vagas.map(vaga => `
+        <tr>
+          <td>${vaga.titulo}</td>
+          <td>${vaga.empresaNome}</td>
+          <td>${vaga.cidade}, ${vaga.estado}</td>
+          <td>${vaga.candidaturas || 0}</td>
+          <td><span class="status status-${vaga.status}">${vaga.status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // ========== FUNÇÃO APROVAR ==========
+    function aprovarEmpresa(uid) {
+      const empresa = Storage.getUserById(uid);
+      if (!empresa) {
+        alert('Erro: Empresa não encontrada!');
+        return;
+      }
+      
+      if (confirm(`Aprovar a empresa "${empresa.nomeEmpresa || empresa.nome}"?`)) {
+        const sucesso = Storage.aprovarEmpresa(uid);
+        if (sucesso) {
+          alert('✅ Empresa aprovada com sucesso!');
+          location.reload();
+        } else {
+          alert('❌ Erro ao aprovar empresa.');
+        }
+      }
+    }
+
+    // ========== FUNÇÃO DELETAR ==========
+    function deletarEmpresa(uid) {
+      const empresa = Storage.getUserById(uid);
+      if (!empresa || empresa.tipo !== 'empresa') {
+        alert('Erro: Empresa não encontrada!');
+        return;
+      }
+
+      const nomeEmpresa = empresa.nomeEmpresa || empresa.nome;
+      const vagasEmpresa = Storage.getVagasByEmpresa(uid);
+      const totalVagas = vagasEmpresa.length;
+      const totalCandidaturas = vagasEmpresa.reduce((acc, v) => acc + (v.candidaturas || 0), 0);
+
+      let mensagem = `⚠️ ATENÇÃO!\n\n`;
+      mensagem += `Você está prestes a EXCLUIR a empresa "${nomeEmpresa}".\n\n`;
+      mensagem += `Isso também excluirá:\n`;
+      mensagem += `• ${totalVagas} vaga(s)\n`;
+      mensagem += `• ${totalCandidaturas} candidatura(s)\n\n`;
+      mensagem += `Esta ação NÃO pode ser desfeita!\n\n`;
+      mensagem += `Deseja continuar?`;
+
+      if (confirm(mensagem)) {
+        const sucesso = Storage.deletarEmpresa(uid);
+        if (sucesso) {
+          alert(`🗑 Empresa "${nomeEmpresa}" excluída com sucesso!`);
+          location.reload();
+        } else {
+          alert('❌ Erro ao excluir empresa.');
+        }
+      }
+    }
+
+    // ========== INICIALIZAR ==========
+    const dados = carregarEstatisticas();
+    carregarPendentes(dados.usuarios);
+    carregarEmpresas(dados.usuarios);
+    carregarVagas(dados.vagas);
+  </script>
+</body>
+</html>
