@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Dashboard Empresa - VagasLocal</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container header-content">
+      <a href="../index.html" class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="7" width="20" height="14" rx="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        VagasLocal
+      </a>
+      <nav class="nav">
+        <span id="user-name" style="display: none;"></span>
+        <button onclick="logout()" class="btn btn-outline btn-sm">Sair</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="dashboard">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Menu</span>
+        <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <ul class="sidebar-menu" id="sidebar-menu">
+        <li><a href="dashboard.html" class="active">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a></li>
+        <li><a href="nova-vaga.html">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Nova Vaga
+        </a></li>
+        <li><a href="candidaturas.html">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Candidaturas
+        </a></li>
+      </ul>
+    </aside>
+
+    <main class="dashboard-content">
+      <h1 style="margin-bottom: 1.25rem; font-size: 1.5rem;">Dashboard</h1>
+      
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Vagas Ativas</h3>
+          <p class="numero" id="stat-vagas">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Candidaturas</h3>
+          <p class="numero" id="stat-candidaturas">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Vagas Encerradas</h3>
+          <p class="numero" id="stat-preenchidas">0</p>
+        </div>
+      </div>
+
+      <h2 style="margin-bottom: 1rem; font-size: 1.25rem;">Minhas Vagas</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Cargo</th>
+              <th>Cidade</th>
+              <th>Candidaturas</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-vagas">
+            <!-- Preenchido via JS -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/storage.js"></script>
+  <script src="../js/auth.js"></script>
+  <script>
+    function toggleSidebar() {
+      document.getElementById('sidebar-menu').classList.toggle('open');
+    }
+
+    // Proteger rota
+    const user = Auth.getCurrentUser();
+    if (!user || user.tipo !== 'empresa') {
+      window.location.href = '../login.html';
+    } else {
+      const nameEl = document.getElementById('user-name');
+      nameEl.textContent = user.nome;
+      nameEl.style.display = 'inline';
+    }
+
+    // Carregar estatísticas
+    const vagas = Storage.getVagasByEmpresa(user.uid);
+    const candidaturas = Storage.getCandidaturasByEmpresa(user.uid);
+    
+    document.getElementById('stat-vagas').textContent = vagas.filter(v => v.status === 'ativa').length;
+    document.getElementById('stat-candidaturas').textContent = candidaturas.length;
+    document.getElementById('stat-preenchidas').textContent = vagas.filter(v => v.status === 'encerrada').length;
+
+    // Carregar tabela
+    const tbody = document.getElementById('tabela-vagas');
+    if (vagas.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">Nenhuma vaga cadastrada</td></tr>';
+    } else {
+      vagas.forEach(vaga => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${vaga.titulo}</strong></td>
+          <td>${vaga.cidade}</td>
+          <td>${vaga.candidaturas || 0}</td>
+          <td><span class="status status-${vaga.status}">${vaga.status}</span></td>
+          <td>
+            <button onclick="encerrarVaga('${vaga.id}')" class="btn btn-sm btn-danger">Encerrar</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function encerrarVaga(id) {
+      if (confirm('Encerrar esta vaga?')) {
+        const vaga = Storage.getVagaById(id);
+        vaga.status = 'encerrada';
+        Storage.updateVaga(vaga);
+        location.reload();
+      }
+    }
+  </script>
+</body>
+</html>
